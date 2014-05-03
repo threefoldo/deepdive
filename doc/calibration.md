@@ -27,18 +27,18 @@ DeepDive allows you to specify a SQL query that defines which variables should b
 
 A custom holdout query should insert all variable IDs that are to be held out into the `dd_graph_variables_holdout` table through arbitrary SQL. Such query may look as follows (but could be more complex):
 
-{% highlight sql %}
+```sql
 INSERT INTO dd_graph_variables_holdout(variable_id)
 [A SELECT statement that selects the IDs of all variables to be in the holdout]
-{% endhighlight %}
+```
 
 The system default holdout query for a random holdout looks as follows:
 
-{% highlight sql %}
+```sql
 INSERT INTO dd_graph_variables_holdout(variable_id)
 SELECT id FROM dd_graph_variables
 WHERE RANDOM() < [holdoutFraction] AND is_evidence = true;
-{% endhighlight %}
+```
 
 Note that because all extractors assign unique variable IDs to extracted tuples you can query your extractor output tables directly to find the appropriate variable IDs. 
 

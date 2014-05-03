@@ -8,14 +8,12 @@ layout: default
 
 You must tell DeepDive which variables you want to use in your inference rules. Each variable has a data type associated with it. Currently, DeepDive only supports *Boolean* variables.
 
-{% highlight bash %}
-deepdive {
-  schema.variables {
-    people.smokes: Boolean
-    people.has_cancer: Boolean
-  }
-}
-{% endhighlight %}
+    deepdive {
+      schema.variables {
+        people.smokes: Boolean
+        people.has_cancer: Boolean
+      }
+    }
 
 In the above example *smokes* and *has_cancer* are boolean attributes in the *people* table. DeepDive will assign a unique variable id to each entry in the *smokes* and *has_cancer* column. This variable id is used during probabilistic inference.
 

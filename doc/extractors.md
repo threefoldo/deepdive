@@ -72,7 +72,7 @@ You can debug extractors by printing output to *stderr* instead of stdin. The ou
 
 An extractor UDF could be written in Python as follows:
 
-{% highlight python %}
+```python
 #! /usr/bin/env python
 
 import fileinput
@@ -90,7 +90,7 @@ for line in fileinput.input():
         "title_id": int(row["title_id"]), 
         "word": word
       })
-{% endhighlight %}
+```
 
 #### Extractor inputs
 
@@ -150,7 +150,7 @@ You can debug extractors by printing output to *stderr* instead of stdin. The ou
 
 An extractor UDF could be written in Python as follows:
 
-{% highlight python %}
+```python
 #! /usr/bin/env python
 
 import fileinput
@@ -163,7 +163,7 @@ for line in fileinput.input():
     for word in set(row["title"].split(" ")):
       # Output the word
       print title_id + '\t' + word
-{% endhighlight %}
+```
 
 #### Extractor inputs
 
@@ -217,7 +217,7 @@ Specifically, the arguments it takes include:
 UDF in `plpy_extractor` is a python program written in a restricted framework. An example, `ext_word_ngram.py` used by above extractor `ngramExtractor` is as follows:
 
 
-{% highlight python %}
+```python
 #! /usr/bin/env python
 
 import ddext
@@ -242,7 +242,7 @@ def run(sentence_id, words, gram_len):
     
   # All tuples have the same sentence_id, while ngram and count vary.
   return ([sentence_id], ngram.keys(), ngram.values())
-{% endhighlight %}
+```
 
 **UDF format.** Since it will be translated into PL/Python by translator in DeepDive,  UDF of plpy_extractor must be written in a specific format:
 
@@ -307,6 +307,7 @@ def run(sentence_id, words, gram_len):
   - **Functions:** If you want to use functions other than `init` and `run`, you should NOT define it outside these functions. What you should do is to **define the functions inside `run`** as nested functions. An example goes follows, which nest the function `get_ngram` inside `run`:
 
 
+        ```python
         def run(sentence_id, words):
           ngram = {}
 
@@ -324,6 +325,7 @@ def run(sentence_id, words, gram_len):
             get_ngram(n)
               
           return ([sentence_id], ngram.keys(), ngram.values())
+        ```
 
 
 You can debug extractors by printing output using *plpy.info* or *plpy.debug* instead of *print*. The output will appear in the DeepDive log file.

@@ -30,7 +30,7 @@ Users can also specify extractors that simply executes a SQL query or an arbitra
 
 For example, one could write an extractor that extracts words form a sentence in Python as follows:
 
-{% highlight python %}
+```python
 #! /usr/bin/env python
 
 import fileinput
@@ -48,7 +48,7 @@ for line in fileinput.input():
         "title_id": int(row["titles.id"]), 
         "word": word
       })
-{% endhighlight %}
+```
 
 
 ### 3. Probabilistic Inference

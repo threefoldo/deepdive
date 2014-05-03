@@ -42,9 +42,9 @@ Start by [downloading and installing DeepDive on your machine](/doc/installation
 
 We will be using PostgreSQL as our primary database in this example. If you followed the DeepDive installation guide and passed all tests then your PostgreSQL server should be running already. Let's start by creating a new database called `deepdive_spouse`:
 
-{% highlight bash %}
+```bash
 createdb deepdive_spouse
-{% endhighlight %}
+```
 
 <div id="#newapp" href="#"> </div>
 
@@ -52,26 +52,26 @@ createdb deepdive_spouse
 
 Start by creating a new folder in the DeepDive directory for your application. Let's called it `spouse_example`.
 
-{% highlight bash %}
+```bash
 cd deepdive
 mkdir -p app/spouse_example
 cd app/spouse_example
-{% endhighlight %}
+```
 
 DeepDive's main entry point is a file called `application.conf` which contains database connection information as well as your feature extraction and inference rule pipelines. It is often useful to have a small `run.sh` script that loads environment variables and executes the DeepDive pipeline. We provide simple templates for both of these to copy and modify: 
 
 
-{% highlight bash %}
+```bash
 cp ../../examples/template/application.conf application.conf
 cp ../../examples/template/run.sh run.sh
 cp ../../examples/template/env.sh env.sh
-{% endhighlight %}
+```
 
 Start modifying the `env.sh` file with your database name:
   
-{% highlight bash %}
+```bash
 export DBNAME=deepdive_spouse
-{% endhighlight %}
+```
 
 You can now try executing the `run.sh` file. Because you have not defined any extractors or inference rules you will not see meaningful results, but DeepDive should run successfully from end to end and you should be able to see a summary report such as:
 
@@ -100,18 +100,18 @@ Our goal in this tutorial is get an initial application up and running. There ar
 
 In this example we will be using raw text from a couple of New York Times articles. Note that there is nothing special about our data set, and you are free to use whatever raw text data you want. Let's copy the data into our directory and create and load it into the database.
 
-{% highlight bash %}
+```bash
 psql -d deepdive_spouse -c "CREATE TABLE articles(
   article_id bigint,
   text text
 );"
-{% endhighlight %}
+```
 
 
-{% highlight bash %}
+```bash
 cp -r ../../examples/spouse_example/data data
 psql -d deepdive_spouse -c "copy articles from STDIN CSV;" < data/articles_dump.csv
-{% endhighlight %}
+```
 
 
 <a id="nlp_extractor" href="#"> </a>
@@ -126,7 +126,7 @@ The first step towards performing Entity and Relation Extraction is to extract n
 
 The `sbt stage` command compiles the extractor (written in Scala) and generates a handy start script. The extractor itself takes JSON tuples of raw document text as input, and outputs JSON tuples of sentences with information such as part-of-speech tags and dependency parses. Let's now create a new table for the output of the extractor in our database. Because the output format of the NLP extractor is fixed by us, you must create a compatible table, such as:
 
-{% highlight bash %}  
+```bash
 psql -d deepdive_spouse -c """
 CREATE TABLE sentences(
   document_id bigint,
@@ -139,7 +139,7 @@ CREATE TABLE sentences(
   sentence_id bigint -- unique identifier for sentences
   );
   """
-{% endhighlight %}
+```
 
 
 Next, let's tell DeepDive to use the extractor, by adding the following lines between the `deepdive {` and `}` lines in the `application.conf` file:
@@ -169,16 +169,16 @@ Let's go through each line:
 
 There are other options you can give to extractor, refer to the [extractor guide](/doc/extractors.html) for a more comprehensive list. At this point you may be wondering about the `before` script. Why do we need that? Each time before the extractor runs we want to clear out the `sentences` table and remove old data, so let's create a `udf/before_sentences.sh`  script that does that:
 
-{% highlight bash %}
+```bash
 #! /usr/bin/env bash
 psql -c "TRUNCATE sentences CASCADE;" deepdive_spouse
-{% endhighlight %}
+```
 
 Great, our first extractor is ready! When you execute `run.sh` DeepDive should run the new extractor and populate the `sentences` table with the result. Note that natural language processing is quite CPU intensive and may take a while to run. On a 2013 MacBook Pro the NLP extractor needed 1 hour to process all of the raw text documents. You can speed up this process by working with a smaller subset of the documents and using `"""SELECT * FROM articles ORDER BY id ASC LIMIT 100"""` as the input query to the extractor. Alternatively, you can also load the finished NLP result into the database directly. We provide a dump of the full `sentences` table in `data/sentences.dump`.
 
-{% highlight bash %}
+```bash
 psql -d deepdive_spouse -c "copy sentences from STDIN CSV;" < ../../examples/spouse_example/data/sentences_dump.csv
-{% endhighlight %}
+```
 
 
 <a id="people_extractor" href="#"> </a>
@@ -189,7 +189,7 @@ Our next task is to extract people mentions from the sentences. Ideally you woul
 
 Let's write a simple extractor that puts all people mentions into their own table. This time we will write our extractor in Python. Again, we first create a new table in the database:
   
-{% highlight bash %}
+```bash
 psql -d deepdive_spouse -c """CREATE TABLE people_mentions(
   sentence_id bigint,
   start_position int,
@@ -198,7 +198,7 @@ psql -d deepdive_spouse -c """CREATE TABLE people_mentions(
   mention_id bigint  -- unique identifier for people_mentions
   );
 """
-{% endhighlight %}
+```
 
 As before, we also add a new extractor to our `application.conf` file:
 
@@ -216,12 +216,12 @@ As before, we also add a new extractor to our `application.conf` file:
 
 The configuration is similar to the `ext_sentences`, but note that the `ext_people` has a dependency on the `ext_sentences` extractor. This means, `ext_sentences` must be run before `ext_sentences` can be executed. Let's create the `udf/before_people.sh` script and a `udf/ext_people.py` Python script:
 
-{% highlight bash %}  
+```bash
 #! /usr/bin/env bash
 psql -c "TRUNCATE people_mentions CASCADE;" deepdive_spouse
-{% endhighlight %}
+```
     
-{% highlight python %}
+```python
 #! /usr/bin/env python
 
 import fileinput
@@ -254,7 +254,7 @@ for row in fileinput.input():
       "text": " ".join(sentence_obj["words"][phrase[0]:phrase[-1]+1]),
       "mention_id": None
     })
-{% endhighlight %}
+```
 
 The `udf/ext_people.py` Python script takes sentences records as an input, and outputs a people record for each (potentially multi-word) person phrase found in the sentence. Note that if you wanted to add debug output, you can print to *stderr* instead of stdout and the messages would appear in the log file.
 
@@ -277,7 +277,7 @@ The above setting tells DeepDive to execute the "nonlp" pipeline, which only con
 
 Now comes the interesting part! We have laid all the groundwork to extract the `has_spouse` relation we care about. Let's create a table for it:
 
-{% highlight bash %}
+```bash
 psql -d deepdive_spouse -c """CREATE TABLE has_spouse(
   person1_id bigint,
   person2_id bigint,
@@ -288,7 +288,7 @@ psql -d deepdive_spouse -c """CREATE TABLE has_spouse(
   id bigint   -- reserved for DeepDive
   );
 """
-{% endhighlight %}
+```
 
 Note the special `is_true` column in the above table. We need this column because we want DeepDive to predict how likely it is that a given entry in the table is correct. In other words, DeepDive will create a [random variable](/doc/general/inference.html) for each instance of it. More concretely, each unique id in the `has_spouse` table will be assigned random variable for its `is_true` column. Let's tell DeepDive to use the `is_true` column for probabilistic inference in the `application.conf`
 
@@ -325,7 +325,7 @@ For negative example we we will use pairs of the same person. That is, "Barack O
 
 Let's create a script `udf/ext_has_spouse.py` as below:
 
-{% highlight python %}
+```python
 #! /usr/bin/env python
 
 import fileinput
@@ -375,15 +375,15 @@ for row in fileinput.input():
     "relation_id": None,
     "id": None
   })
-{% endhighlight %}
+```
 
 
 Create a script `udf/before_has_spouse.sh` as below:
 
-{% highlight bash %}
+```bash
 #! /usr/bin/env bash
 psql -c "TRUNCATE has_spouse CASCADE;" deepdive_spouse
-{% endhighlight %}
+```
 
 We also need to add our new extractor to the pipeline:
 
@@ -396,12 +396,12 @@ We also need to add our new extractor to the pipeline:
 
 For DeepDive to make predictions, we need to add *features* to our candidate relations. Features are properties that help decide whether or not the given relation is correct. For example, one feature may be the sequence of words between the two mentions. We could have saved the features in the `has_spouse` table that we created above, but it is often cleaner to have a separate table for them:
 
-{% highlight bash %}
+```bash
 psql -d deepdive_spouse -c """CREATE TABLE has_spouse_features(
   relation_id bigint,
   feature text);
   """
-{% endhighlight %}
+```
 
 And our extractor:
 
@@ -429,7 +429,7 @@ And our extractor:
 
 Create script `udf/ext_has_spouse_features.py` as follows:
 
-{% highlight python %}
+```python
 #! /usr/bin/env python
 
 import fileinput
@@ -476,14 +476,14 @@ for row in fileinput.input():
       "relation_id": obj["relation_id"],
       "feature": feature
     })
-{% endhighlight %}
+```
 
 Create script `udf/before_has_spouse_features.sh` as follows:
 
-{% highlight bash %}
+```bash
 #! /usr/bin/env bash
 psql -c "TRUNCATE has_spouse_features CASCADE;" deepdive_spouse
-{% endhighlight %}
+```
 
 Don't forget to add the new extractor to your pipeline:
 
@@ -569,9 +569,9 @@ Let's try running the full pipeline using `./run.sh`. All extractors other than 
 
 Great, let's take a look at some of the predictions that DeepDive has made. DeepDive creates a view for each variable you have defined in the database:
 
-{% highlight bash %}
+```bash
 psql -d deepdive_spouse -c "select sentence_id, description, expectation from has_spouse_is_true_inference where expectation > 0.9 limit 10;"
-{% endhighlight %}
+```
 
      sentence_id |               description               | expectation 
     -------------+-----------------------------------------+-------------
@@ -601,9 +601,9 @@ The calibration plot contains useful information that help you to improve the qu
 
 Often, it is also useful to look at the *weights* that were learned for features or rules. You can do this by looking at the `mapped_inference_results_weights` table in the database:
 
-{% highlight bash %}
+```bash
 psql -d deepdive_spouse -c "select description, weight from dd_inference_result_variables_mapped_weights limit 5;" 
-{% endhighlight %}
+```
 
                                              description                                         |      weight       
     ---------------------------------------------------------------------------------------------+-------------------
