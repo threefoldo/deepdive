@@ -18,6 +18,12 @@ cd "$DEEPDIVE_APP"
 # make sure database is created based on the database type
 db-init "$@"
 
+# create schema
+DEEPDIVE_SCHEMA=${DEEPDIVE_SCHEMA:-}
+if [ -n "$DEEPDIVE_SCHEMA" ]; then
+  deepdive-sql "CREATE SCHEMA $DEEPDIVE_SCHEMA;"
+fi
+
 generate_schema_json() {
     tmp=$(mktemp -d "${TMPDIR:-/tmp}"/deepdive-initdb.XXXXXXX)
     trap 'rm -rf "$tmp"' EXIT
